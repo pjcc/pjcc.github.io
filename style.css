@@ -1,0 +1,13 @@
+* {
+	box-sizing: border-box;
+	color:blue;
+	font-family:arial;
+}
+ul li {
+	color:red;
+}
+.xyz {
+	border:1px solid black;
+	background-color:grey;
+	width:50%;
+}
