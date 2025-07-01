@@ -1,8 +1,44 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>hiya</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Piers Carrigan - QA</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<p>nooooo</p>
+  <div class="container">
+    <header>
+      <button id="darkModeToggle" class="toggle-btn">🌙 / ☀️</button>
+      <h1>Piers Carrigan</h1>
+      <p>QA</p>
+    </header>
+    <main>
+      <a href="https://www.linkedin.com/in/pierscarrigan/" class="btn" aria-label="Link to Piers Carrigan's Linkedin">Linkedin</a><br>
+      <a href="https://github.com/pjcc" class="btn" aria-label="Link to Piers Carrigan's Github">Github</a><br>
+      <a href="mailto:piers.carrigan+githubpages@gmail.com" class="btn" aria-label="Email link for Piers Carrigan">Email</a>
+    </main>
+    <footer>
+    </footer>
+  </div>
+
+<script>
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const storedTheme = localStorage.getItem('theme');
+
+  if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+    document.body.classList.add('dark');
+  }
+
+  const toggleBtn = document.getElementById('darkModeToggle');
+  toggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    localStorage.setItem(
+      'theme',
+      document.body.classList.contains('dark') ? 'dark' : 'light'
+    );
+  });
+</script>
 </body>
 </html>
+<!-- https://github.com/pjcc/pjcc.github.io -->
