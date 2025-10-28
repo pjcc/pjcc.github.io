@@ -46,19 +46,33 @@
       </main>
       <footer></footer>
     </div>
-
     <script>
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const storedTheme = localStorage.getItem("theme");
+      const toggleBtn = document.getElementById("darkModeToggle");
 
-      if (storedTheme === "dark" || (!storedTheme && prefersDark)) {
+      // Determine initial theme
+      const isDark = storedTheme === "dark" || (!storedTheme && prefersDark);
+      if (isDark) {
         document.body.classList.add("dark");
       }
 
-      const toggleBtn = document.getElementById("darkModeToggle");
+      // Set initial accessibility attributes
+      toggleBtn.setAttribute("aria-pressed", isDark);
+      toggleBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+      // toggleBtn.textContent = isDark ? "☀️" : "🌙";
+
+      // Handle toggle click
       toggleBtn.addEventListener("click", () => {
-        document.body.classList.toggle("dark");
-        localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+        const nowDark = !document.body.classList.contains("dark");
+
+        document.body.classList.toggle("dark", nowDark);
+        localStorage.setItem("theme", nowDark ? "dark" : "light");
+
+        // Update ARIA attributes and icon
+        toggleBtn.setAttribute("aria-pressed", nowDark);
+        toggleBtn.setAttribute("aria-label", nowDark ? "Switch to light mode" : "Switch to dark mode");
+        // toggleBtn.textContent = nowDark ? "☀️" : "🌙";
       });
     </script>
   </body>
