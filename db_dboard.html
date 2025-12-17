@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Global Status Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -10,7 +11,14 @@
         width: 10px;
         border-radius: 50%;
         transition: all 0.3s;
+        position: relative;
+        z-index: 10;
+        cursor: pointer;
       }
+      .status-dot:hover {
+        transform: scale(1.2);
+      }
+
       /* Tiered Color Palette */
       .bg-ok {
         background-color: #10b981;
@@ -24,36 +32,102 @@
         background-color: #ef4444;
         box-shadow: 0 0 12px #ef4444;
       }
+      .bg-sync-error {
+        background-color: #475569;
+      }
+
+      /* Spinning Sync Animation */
+      .syncing-ring {
+        position: absolute;
+        inset: -4px;
+        border: 2px solid transparent;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        display: none;
+        pointer-events: none;
+      }
+      .is-syncing .syncing-ring {
+        display: block;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       .service-card:hover {
         transform: translateY(-2px);
         transition: all 0.2s;
+      }
+      #status-log {
+        max-height: 300px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #334155 #0f172a;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .log-entry {
+        animation: slideIn 0.3s ease-out forwards;
       }
     </style>
   </head>
   <body class="bg-[#0b0f1a] text-slate-300 min-h-screen p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
       <header class="mb-8 border-b border-slate-800 pb-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-4">
           <h1 class="text-3xl font-black text-white italic tracking-tighter uppercase">
-            Incident Monitor <span class="text-blue-500 font-mono text-sm ml-2">100 SENSORS ACTIVE</span>
+            Incident Monitor <span id="sensor-count" class="text-blue-500 font-mono text-sm ml-2">20 SENSORS ACTIVE</span>
           </h1>
-          <div id="refresh-counter" class="text-[10px] font-mono text-slate-500 uppercase tracking-widest text-blue-400">
+          <div id="refresh-counter" class="text-[10px] font-mono text-slate-500 uppercase tracking-widest text-blue-400 text-right">
             Initializing...
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Active Incidents</span>
+            <span id="global-down" class="text-xl font-black text-red-500 font-mono">0</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Possible Issues</span>
+            <span id="global-warn" class="text-xl font-black text-orange-500 font-mono">0</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Operational</span>
+            <span id="global-ok" class="text-xl font-black text-emerald-500 font-mono">0</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <span class="text-[10px] font-bold text-slate-400 uppercase">Sync Errors</span>
+            <span id="global-error" class="text-xl font-black text-slate-400 font-mono">0</span>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Search Services</label>
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Search Services</label>
             <input
               type="text"
               id="filter-input"
-              placeholder="Search (e.g. 'shop', 'goog')..."
+              placeholder="Search..."
               class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
             />
           </div>
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Category</label>
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Category</label>
             <select
               id="category-select"
               class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
@@ -67,7 +141,7 @@
             </select>
           </div>
           <div>
-            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Priority Sorting</label>
+            <label class="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Priority Sorting</label>
             <select
               id="sort-select"
               class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
@@ -81,8 +155,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div id="infra-aws" class="bg-slate-900 border border-blue-900/50 p-6 rounded-2xl flex justify-between items-center shadow-lg">
             <div>
-              <span class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Big cloud</span>
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Big cloud</span>
               <h2 class="text-2xl font-black text-white italic">AWS</h2>
+              <div id="sync-aws" class="text-[9px] text-slate-100 font-mono mt-1 uppercase tracking-tighter">Sync: Pending</div>
             </div>
             <div class="flex items-center gap-6">
               <button
@@ -91,7 +166,15 @@
               >
                 CHART ↗
               </button>
-              <div id="dot-aws" class="status-dot bg-ok h-4 w-4"></div>
+              <div class="relative h-4 w-4 flex items-center justify-center" id="container-aws-amazon-web-services">
+                <div class="syncing-ring"></div>
+                <div
+                  id="dot-aws"
+                  onclick="resyncIndividual('aws-amazon-web-services')"
+                  title="Click to resync"
+                  class="status-dot bg-sync-error"
+                ></div>
+              </div>
             </div>
           </div>
           <div
@@ -99,8 +182,9 @@
             class="bg-slate-900 border border-blue-900/50 p-6 rounded-2xl flex justify-between items-center shadow-lg"
           >
             <div>
-              <span class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Big DNS</span>
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Big DNS</span>
               <h2 class="text-2xl font-black text-white italic">CLOUDFLARE</h2>
+              <div id="sync-cloudflare" class="text-[9px] text-slate-100 font-mono mt-1 uppercase tracking-tighter">Sync: Pending</div>
             </div>
             <div class="flex items-center gap-6">
               <button
@@ -109,18 +193,45 @@
               >
                 CHART ↗
               </button>
-              <div id="dot-cloudflare" class="status-dot bg-ok h-4 w-4"></div>
+              <div class="relative h-4 w-4 flex items-center justify-center" id="container-cloudflare">
+                <div class="syncing-ring"></div>
+                <div
+                  id="dot-cloudflare"
+                  onclick="resyncIndividual('cloudflare')"
+                  title="Click to resync"
+                  class="status-dot bg-sync-error"
+                ></div>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <div id="dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+
+      <div class="mt-8 flex justify-center">
+        <button
+          id="view-more-btn"
+          onclick="expandList()"
+          class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all uppercase text-xs tracking-widest"
+        >
+          View More (+40 Sensors)
+        </button>
+      </div>
+
+      <footer class="mt-16 border-t border-slate-800 pt-8 mb-12">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span class="h-2 w-2 bg-blue-500 rounded-full animate-ping"></span>
+          Real-Time System Log
+        </h2>
+        <div id="status-log" class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 font-mono text-[10px] space-y-1">
+          <div class="text-slate-500 italic">No events recorded yet. Dashboard is warming up...</div>
+        </div>
+      </footer>
     </div>
 
     <script>
-      // FULL 100 SERVICE LIST WITH CORRECTED SLUGS
-      const SERVICES = [
+      const ALL_SERVICES = [
         { id: "youtube", cat: "social" },
         { id: "facebook", cat: "social" },
         { id: "instagram", cat: "social" },
@@ -224,64 +335,153 @@
       ];
 
       const PROXY = "https://api.allorigins.win/get?url=";
+      const STATUS_NAMES = { 0: "OPERATIONAL", 1: "POSSIBLE ISSUES", 2: "INCIDENT ACTIVE", 3: "SYNC ERROR" };
       let masterData = [];
+      let visibleLimit = 20;
       let timeLeft = 60;
 
-      // MODAL BYPASS: Uses window.open because Downdetector blocks iframes
-      function openModal(id) {
-        const width = 1000,
-          height = 800;
-        const left = screen.width / 2 - width / 2,
-          top = screen.height / 2 - height / 2;
-        window.open(`https://downdetector.com/status/${id}`, "targetWindow", `width=${width},height=${height},top=${top},left=${left}`);
+      function logEvent(serviceName, oldSev, newSev, customMsg = null) {
+        const log = document.getElementById("status-log");
+        if (log.innerHTML.includes("No events recorded")) log.innerHTML = "";
+        const time = new Date().toLocaleTimeString();
+        const entry = document.createElement("div");
+        entry.className = "log-entry border-l-2 border-slate-700 pl-2 mb-1 py-1";
+
+        if (customMsg) {
+          entry.innerHTML = `<span class="text-slate-500">[${time}]</span> <span class="text-blue-400 font-bold uppercase tracking-widest text-[8px]">SYSTEM:</span> <span class="text-slate-400">${customMsg}</span>`;
+        } else {
+          if (oldSev === newSev) return;
+          const colorClass = newSev === 2 ? "text-red-500" : newSev === 1 ? "text-orange-400" : "text-emerald-400";
+          entry.innerHTML = `<span class="text-slate-500">[${time}]</span> <span class="text-white font-bold capitalize">${serviceName.replace(
+            /-/g,
+            " "
+          )}</span>: 
+                                 <span class="text-slate-500">${STATUS_NAMES[oldSev]}</span> → <span class="${colorClass} font-bold">${
+            STATUS_NAMES[newSev]
+          }</span>`;
+        }
+        log.prepend(entry);
+        if (log.children.length > 50) log.removeChild(log.lastChild);
       }
 
-      // DETECTOR LOGIC
+      function expandList() {
+        if (visibleLimit === 20) visibleLimit = 60;
+        else if (visibleLimit === 60) visibleLimit = 100;
+        document.getElementById("sensor-count").innerText = `${visibleLimit} SENSORS ACTIVE`;
+        if (visibleLimit >= 100) document.getElementById("view-more-btn").style.display = "none";
+        refreshData();
+      }
+
+      function openModal(id) {
+        window.open(`https://downdetector.com/status/${id}`, "targetWindow", `width=1000,height=800,top=100,left=100`);
+      }
+
       async function fetchServiceStatus(id) {
+        const itemEl = document.getElementById(`container-${id}`);
+        if (itemEl) itemEl.classList.add("is-syncing");
+
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
           const url = encodeURIComponent(`https://downdetector.com/status/${id}/`);
-          const res = await fetch(`${PROXY}${url}`);
+          const res = await fetch(`${PROXY}${url}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.status === 429 || res.status === 403) throw new Error("Rate Limited");
           const json = await res.json();
           const html = json.contents.toLowerCase();
-
-          // Tiered status detection based on DD common strings
           const isCritical =
-            html.includes("reports indicate problems at") ||
-            (html.includes("user reports indicate problems") && !html.includes("no current problems"));
+            (html.includes("reports indicate problems") || html.includes("problems at shopify")) && !html.includes("no current problems");
           const isWarning = html.includes("possible problems") || html.includes("indicated problems");
 
-          if (isCritical) return 2; // Red
-          if (isWarning) return 1; // Yellow
-          return 0; // Green
-        } catch (e) {
+          if (itemEl) itemEl.classList.remove("is-syncing");
+          if (isCritical) return 2;
+          if (isWarning) return 1;
           return 0;
+        } catch (e) {
+          if (itemEl) itemEl.classList.remove("is-syncing");
+          return 3;
+        }
+      }
+
+      async function resyncIndividual(id) {
+        const item = masterData.find((s) => s.id === id);
+        const oldSev = item ? item.severity : null;
+        const newSev = await fetchServiceStatus(id);
+        const timestamp = new Date().toLocaleTimeString();
+
+        if (item) {
+          logEvent(id, oldSev, newSev);
+          item.severity = newSev;
+          item.lastSync = newSev === 3 ? "Error" : timestamp;
+          updateGlobalSummary();
+          render();
+        } else if (id === "aws-amazon-web-services" || id === "cloudflare") {
+          const elId = id === "cloudflare" ? "dot-cloudflare" : "dot-aws";
+          const syncId = id === "cloudflare" ? "sync-cloudflare" : "sync-aws";
+          const colors = { 0: "bg-ok", 1: "bg-warn", 2: "bg-down", 3: "bg-sync-error" };
+          document.getElementById(elId).className = `status-dot ${colors[newSev]}`;
+          document.getElementById(syncId).innerText = newSev === 3 ? "Sync: Error" : `Sync: ${timestamp}`;
         }
       }
 
       async function refreshData() {
         if (masterData.length === 0) {
-          masterData = SERVICES.map((s, i) => ({ ...s, index: i + 1, severity: 0 }));
+          masterData = ALL_SERVICES.map((s, i) => ({ ...s, index: i + 1, severity: 0, lastSync: "Pending" }));
         }
         render();
+        logEvent(null, null, null, `Initiating full scan of ${visibleLimit} sensors...`);
 
-        // Permanent Core Infrastructure Check
+        const timestamp = new Date().toLocaleTimeString();
         const awsSev = await fetchServiceStatus("aws-amazon-web-services");
         const cfSev = await fetchServiceStatus("cloudflare");
 
-        const setDot = (elId, sev) => {
-          const colors = { 0: "bg-ok", 1: "bg-warn", 2: "bg-down" };
+        const setUI = (elId, syncId, sev) => {
+          const colors = { 0: "bg-ok", 1: "bg-warn", 2: "bg-down", 3: "bg-sync-error" };
           document.getElementById(elId).className = `status-dot ${colors[sev]}`;
+          document.getElementById(syncId).innerText = sev === 3 ? "Sync: Error" : `Sync: ${timestamp}`;
         };
-        setDot("dot-aws", awsSev);
-        setDot("dot-cloudflare", cfSev);
+        setUI("dot-aws", "sync-aws", awsSev);
+        setUI("dot-cloudflare", "sync-cloudflare", cfSev);
 
-        // Sequential async tasks for main list
-        const tasks = masterData.map(async (item) => {
-          item.severity = await fetchServiceStatus(item.id);
-        });
+        const visibleItems = masterData.slice(0, visibleLimit);
+        const batchSize = 10;
+        const totalBatches = Math.ceil(visibleItems.length / batchSize);
 
-        await Promise.all(tasks);
-        render();
+        for (let i = 0; i < visibleItems.length; i += batchSize) {
+          const batchNum = i / batchSize + 1;
+          const batch = visibleItems.slice(i, i + batchSize);
+          await Promise.all(
+            batch.map(async (item) => {
+              const oldSev = item.severity;
+              const newSev = await fetchServiceStatus(item.id);
+              if (item.lastSync !== "Pending") logEvent(item.id, oldSev, newSev);
+              item.severity = newSev;
+              item.lastSync = newSev === 3 ? "Error" : timestamp;
+            })
+          );
+          logEvent(null, null, null, `Batch ${batchNum}/${totalBatches} synchronized.`);
+          updateGlobalSummary();
+          render();
+          if (i + batchSize < visibleItems.length) await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        logEvent(null, null, null, `System scan complete.`);
+      }
+
+      function updateGlobalSummary() {
+        const stats = masterData.slice(0, visibleLimit).reduce(
+          (acc, curr) => {
+            if (curr.severity === 2) acc.down++;
+            else if (curr.severity === 1) acc.warn++;
+            else if (curr.severity === 0) acc.ok++;
+            else acc.error++;
+            return acc;
+          },
+          { down: 0, warn: 0, ok: 0, error: 0 }
+        );
+        document.getElementById("global-down").innerText = stats.down;
+        document.getElementById("global-warn").innerText = stats.warn;
+        document.getElementById("global-ok").innerText = stats.ok;
+        document.getElementById("global-error").innerText = stats.error;
       }
 
       function render() {
@@ -296,41 +496,60 @@
           return matchesSearch && matchesCat;
         });
 
-        if (sortVal === "alpha") {
-          filtered.sort((a, b) => a.id.localeCompare(b.id));
-        } else {
-          filtered.sort((a, b) => a.index - b.index);
-        }
+        if (sortVal === "alpha") filtered.sort((a, b) => a.id.localeCompare(b.id));
+        else filtered.sort((a, b) => a.index - b.index);
 
-        grid.innerHTML = filtered
-          .map(
-            (item) => `
-                <div class="service-card bg-slate-900 border ${
-                  item.severity === 2 ? "border-red-600" : item.severity === 1 ? "border-orange-600" : "border-slate-800"
-                } p-4 rounded-xl flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-[9px] font-mono text-slate-600 uppercase tracking-widest">${item.cat}</span>
-                            <div class="status-dot ${item.severity === 2 ? "bg-down" : item.severity === 1 ? "bg-warn" : "bg-ok"}"></div>
+        const displayList = filtered.slice(0, visibleLimit);
+        grid.innerHTML = displayList
+          .map((item) => {
+            const configs = {
+              0: { dot: "bg-ok", border: "border-slate-800", text: "Operational", textColor: "text-slate-500", opacity: "opacity-100" },
+              1: {
+                dot: "bg-warn",
+                border: "border-orange-600",
+                text: "Possible Issues",
+                textColor: "text-orange-500",
+                opacity: "opacity-100",
+              },
+              2: { dot: "bg-down", border: "border-red-600", text: "Incident Active", textColor: "text-red-500", opacity: "opacity-100" },
+              3: {
+                dot: "bg-sync-error",
+                border: "border-slate-800",
+                text: "Sync Error",
+                textColor: "text-slate-600",
+                opacity: "opacity-40",
+              },
+            };
+            const conf = configs[item.severity] || configs[3];
+            return `<div class="service-card bg-slate-900 border ${conf.border} ${
+              conf.opacity
+            } p-4 rounded-xl flex flex-col justify-between transition-all duration-700">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-mono text-slate-300 uppercase tracking-widest">${item.cat}</span>
+                            <span class="text-[8px] font-mono text-slate-100 uppercase mt-1 tracking-tighter">Synced: ${
+                              item.lastSync
+                            }</span>
                         </div>
-                        <h2 class="text-md font-bold text-white capitalize truncate mb-4">${item.id.replace(/-/g, " ")}</h2>
+                        <div class="relative h-4 w-4 flex items-center justify-center" id="container-${item.id}">
+                            <div class="syncing-ring"></div>
+                            <div class="status-dot ${conf.dot}" onclick="resyncIndividual('${item.id}')" title="Click to resync"></div>
+                        </div>
                     </div>
-                    <div class="space-y-3">
-                        <button onclick="openModal('${
-                          item.id
-                        }')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-[10px] font-bold tracking-wider transition-colors uppercase">View Live Chart</button>
-                        <div class="flex justify-between items-center text-[10px]">
-                            <span class="${
-                              item.severity === 2 ? "text-red-500" : item.severity === 1 ? "text-orange-500" : "text-slate-500"
-                            } font-bold uppercase">
-                                ${item.severity === 2 ? "Incident Active" : item.severity === 1 ? "Possible Issues" : "Operational"}
-                            </span>
-                            <span class="text-slate-800 font-mono">#${item.index}</span>
-                        </div>
+                    <h2 class="text-md font-bold text-white capitalize truncate mb-4">${item.id.replace(/-/g, " ")}</h2>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="openModal('${
+                      item.id
+                    }')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-[10px] font-bold tracking-wider transition-colors uppercase">View Live Chart</button>
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="${conf.textColor} font-bold uppercase tracking-tighter">${conf.text}</span>
+                        <span class="text-slate-800 font-mono">#${item.index}</span>
                     </div>
                 </div>
-            `
-          )
+            </div>`;
+          })
           .join("");
       }
 
@@ -344,7 +563,7 @@
           timeLeft = 60;
           refreshData();
         }
-        document.getElementById("refresh-counter").innerText = `SCANNING 100 CHANNELS: ${timeLeft}S`;
+        document.getElementById("refresh-counter").innerText = `SCANNING ${visibleLimit} CHANNELS: ${timeLeft}S`;
       }, 1000);
 
       refreshData();
