@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Global Status Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .status-dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        transition: all 0.3s;
+      }
+      /* Tiered Color Palette */
+      .bg-ok {
+        background-color: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+      .bg-warn {
+        background-color: #f59e0b;
+        box-shadow: 0 0 8px #f59e0b;
+      }
+      .bg-down {
+        background-color: #ef4444;
+        box-shadow: 0 0 12px #ef4444;
+      }
+      .service-card:hover {
+        transform: translateY(-2px);
+        transition: all 0.2s;
+      }
+    </style>
+  </head>
+  <body class="bg-[#0b0f1a] text-slate-300 min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+      <header class="mb-8 border-b border-slate-800 pb-6">
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-3xl font-black text-white italic tracking-tighter uppercase">
+            Incident Monitor <span class="text-blue-500 font-mono text-sm ml-2">100 SENSORS ACTIVE</span>
+          </h1>
+          <div id="refresh-counter" class="text-[10px] font-mono text-slate-500 uppercase tracking-widest text-blue-400">
+            Initializing...
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Search Services</label>
+            <input
+              type="text"
+              id="filter-input"
+              placeholder="Search (e.g. 'shop', 'goog')..."
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Category</label>
+            <select
+              id="category-select"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="all">All Sectors</option>
+              <option value="social">Social/Communication</option>
+              <option value="gaming">Gaming/Entertainment</option>
+              <option value="telecom">ISP/Mobile</option>
+              <option value="finance">Banking/Fintech</option>
+              <option value="work">SaaS/Work</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Priority Sorting</label>
+            <select
+              id="sort-select"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="fixed">Default Priority</option>
+              <option value="alpha">Alphabetical (A-Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div id="infra-aws" class="bg-slate-900 border border-blue-900/50 p-6 rounded-2xl flex justify-between items-center shadow-lg">
+            <div>
+              <span class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Big cloud</span>
+              <h2 class="text-2xl font-black text-white italic">AWS</h2>
+            </div>
+            <div class="flex items-center gap-6">
+              <button
+                onclick="openModal('aws-amazon-web-services')"
+                class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-[10px] font-bold tracking-widest"
+              >
+                CHART ↗
+              </button>
+              <div id="dot-aws" class="status-dot bg-ok h-4 w-4"></div>
+            </div>
+          </div>
+          <div
+            id="infra-cloudflare"
+            class="bg-slate-900 border border-blue-900/50 p-6 rounded-2xl flex justify-between items-center shadow-lg"
+          >
+            <div>
+              <span class="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Big DNS</span>
+              <h2 class="text-2xl font-black text-white italic">CLOUDFLARE</h2>
+            </div>
+            <div class="flex items-center gap-6">
+              <button
+                onclick="openModal('cloudflare')"
+                class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded text-[10px] font-bold tracking-widest"
+              >
+                CHART ↗
+              </button>
+              <div id="dot-cloudflare" class="status-dot bg-ok h-4 w-4"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+    </div>
+
+    <script>
+      // FULL 100 SERVICE LIST WITH CORRECTED SLUGS
+      const SERVICES = [
+        { id: "youtube", cat: "social" },
+        { id: "facebook", cat: "social" },
+        { id: "instagram", cat: "social" },
+        { id: "whatsapp", cat: "social" },
+        { id: "twitter", cat: "social" },
+        { id: "discord", cat: "social" },
+        { id: "google", cat: "social" },
+        { id: "amazon", cat: "social" },
+        { id: "netflix", cat: "social" },
+        { id: "reddit", cat: "social" },
+        { id: "tiktok", cat: "social" },
+        { id: "snapchat", cat: "social" },
+        { id: "spotify", cat: "social" },
+        { id: "twitch", cat: "social" },
+        { id: "pinterest", cat: "social" },
+        { id: "linkedin", cat: "social" },
+        { id: "wikipedia", cat: "social" },
+        { id: "github", cat: "social" },
+        { id: "tumblr", cat: "social" },
+        { id: "quora", cat: "social" },
+        { id: "vimeo", cat: "social" },
+        { id: "threads", cat: "social" },
+        { id: "telegram", cat: "social" },
+        { id: "signal", cat: "social" },
+        { id: "mastodon", cat: "social" },
+        { id: "roblox", cat: "gaming" },
+        { id: "steam", cat: "gaming" },
+        { id: "playstation-network", cat: "gaming" },
+        { id: "xbox-live", cat: "gaming" },
+        { id: "nintendo-online", cat: "gaming" },
+        { id: "fortnite", cat: "gaming" },
+        { id: "valorant", cat: "gaming" },
+        { id: "minecraft", cat: "gaming" },
+        { id: "apex-legends", cat: "gaming" },
+        { id: "call-of-duty", cat: "gaming" },
+        { id: "league-of-legends", cat: "gaming" },
+        { id: "genshin-impact", cat: "gaming" },
+        { id: "ea", cat: "gaming" },
+        { id: "ubisoft", cat: "gaming" },
+        { id: "epic-games-store", cat: "gaming" },
+        { id: "destiny", cat: "gaming" },
+        { id: "rocket-league", cat: "gaming" },
+        { id: "blizzard", cat: "gaming" },
+        { id: "overwatch", cat: "gaming" },
+        { id: "pokemon-go", cat: "gaming" },
+        { id: "rockstar-games", cat: "gaming" },
+        { id: "world-of-warcraft", cat: "gaming" },
+        { id: "riot-games", cat: "gaming" },
+        { id: "bungie", cat: "gaming" },
+        { id: "warframe", cat: "gaming" },
+        { id: "t-mobile", cat: "telecom" },
+        { id: "verizon", cat: "telecom" },
+        { id: "att", cat: "telecom" },
+        { id: "comcast", cat: "telecom" },
+        { id: "spectrum", cat: "telecom" },
+        { id: "cox", cat: "telecom" },
+        { id: "sky", cat: "telecom" },
+        { id: "vodafone", cat: "telecom" },
+        { id: "bt-british-telecom", cat: "telecom" },
+        { id: "orange", cat: "telecom" },
+        { id: "telefonica", cat: "telecom" },
+        { id: "bell-canada", cat: "telecom" },
+        { id: "rogers", cat: "telecom" },
+        { id: "telus", cat: "telecom" },
+        { id: "optus", cat: "telecom" },
+        { id: "telstra", cat: "telecom" },
+        { id: "centurylink", cat: "telecom" },
+        { id: "frontier", cat: "telecom" },
+        { id: "google-fiber", cat: "telecom" },
+        { id: "starlink", cat: "telecom" },
+        { id: "chase", cat: "finance" },
+        { id: "bank-of-america", cat: "finance" },
+        { id: "wells-fargo", cat: "finance" },
+        { id: "capital-one", cat: "finance" },
+        { id: "paypal", cat: "finance" },
+        { id: "venmo", cat: "finance" },
+        { id: "cash-app", cat: "finance" },
+        { id: "zelle", cat: "finance" },
+        { id: "fidelity", cat: "finance" },
+        { id: "charles-schwab", cat: "finance" },
+        { id: "visa", cat: "finance" },
+        { id: "mastercard", cat: "finance" },
+        { id: "citibank", cat: "finance" },
+        { id: "americanexpress", cat: "finance" },
+        { id: "barclays", cat: "finance" },
+        { id: "shopify", cat: "work" },
+        { id: "slack", cat: "work" },
+        { id: "microsoft-teams", cat: "work" },
+        { id: "zoom", cat: "work" },
+        { id: "outlook", cat: "work" },
+        { id: "gmail", cat: "work" },
+        { id: "notion", cat: "work" },
+        { id: "openai", cat: "work" },
+        { id: "canva", cat: "work" },
+        { id: "adobe", cat: "work" },
+        { id: "figma", cat: "work" },
+        { id: "trello", cat: "work" },
+        { id: "asana", cat: "work" },
+        { id: "monday-com", cat: "work" },
+        { id: "basecamp", cat: "work" },
+      ];
+
+      const PROXY = "https://api.allorigins.win/get?url=";
+      let masterData = [];
+      let timeLeft = 60;
+
+      // MODAL BYPASS: Uses window.open because Downdetector blocks iframes
+      function openModal(id) {
+        const width = 1000,
+          height = 800;
+        const left = screen.width / 2 - width / 2,
+          top = screen.height / 2 - height / 2;
+        window.open(`https://downdetector.com/status/${id}`, "targetWindow", `width=${width},height=${height},top=${top},left=${left}`);
+      }
+
+      // DETECTOR LOGIC
+      async function fetchServiceStatus(id) {
+        try {
+          const url = encodeURIComponent(`https://downdetector.com/status/${id}/`);
+          const res = await fetch(`${PROXY}${url}`);
+          const json = await res.json();
+          const html = json.contents.toLowerCase();
+
+          // Tiered status detection based on DD common strings
+          const isCritical =
+            html.includes("reports indicate problems at") ||
+            (html.includes("user reports indicate problems") && !html.includes("no current problems"));
+          const isWarning = html.includes("possible problems") || html.includes("indicated problems");
+
+          if (isCritical) return 2; // Red
+          if (isWarning) return 1; // Yellow
+          return 0; // Green
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      async function refreshData() {
+        if (masterData.length === 0) {
+          masterData = SERVICES.map((s, i) => ({ ...s, index: i + 1, severity: 0 }));
+        }
+        render();
+
+        // Permanent Core Infrastructure Check
+        const awsSev = await fetchServiceStatus("aws-amazon-web-services");
+        const cfSev = await fetchServiceStatus("cloudflare");
+
+        const setDot = (elId, sev) => {
+          const colors = { 0: "bg-ok", 1: "bg-warn", 2: "bg-down" };
+          document.getElementById(elId).className = `status-dot ${colors[sev]}`;
+        };
+        setDot("dot-aws", awsSev);
+        setDot("dot-cloudflare", cfSev);
+
+        // Sequential async tasks for main list
+        const tasks = masterData.map(async (item) => {
+          item.severity = await fetchServiceStatus(item.id);
+        });
+
+        await Promise.all(tasks);
+        render();
+      }
+
+      function render() {
+        const grid = document.getElementById("dashboard");
+        const search = document.getElementById("filter-input").value.toLowerCase();
+        const category = document.getElementById("category-select").value;
+        const sortVal = document.getElementById("sort-select").value;
+
+        let filtered = masterData.filter((item) => {
+          const matchesSearch = item.id.toLowerCase().includes(search);
+          const matchesCat = category === "all" || item.cat === category;
+          return matchesSearch && matchesCat;
+        });
+
+        if (sortVal === "alpha") {
+          filtered.sort((a, b) => a.id.localeCompare(b.id));
+        } else {
+          filtered.sort((a, b) => a.index - b.index);
+        }
+
+        grid.innerHTML = filtered
+          .map(
+            (item) => `
+                <div class="service-card bg-slate-900 border ${
+                  item.severity === 2 ? "border-red-600" : item.severity === 1 ? "border-orange-600" : "border-slate-800"
+                } p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-[9px] font-mono text-slate-600 uppercase tracking-widest">${item.cat}</span>
+                            <div class="status-dot ${item.severity === 2 ? "bg-down" : item.severity === 1 ? "bg-warn" : "bg-ok"}"></div>
+                        </div>
+                        <h2 class="text-md font-bold text-white capitalize truncate mb-4">${item.id.replace(/-/g, " ")}</h2>
+                    </div>
+                    <div class="space-y-3">
+                        <button onclick="openModal('${
+                          item.id
+                        }')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-[10px] font-bold tracking-wider transition-colors uppercase">View Live Chart</button>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="${
+                              item.severity === 2 ? "text-red-500" : item.severity === 1 ? "text-orange-500" : "text-slate-500"
+                            } font-bold uppercase">
+                                ${item.severity === 2 ? "Incident Active" : item.severity === 1 ? "Possible Issues" : "Operational"}
+                            </span>
+                            <span class="text-slate-800 font-mono">#${item.index}</span>
+                        </div>
+                    </div>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      document.getElementById("filter-input").addEventListener("input", render);
+      document.getElementById("category-select").addEventListener("change", render);
+      document.getElementById("sort-select").addEventListener("change", render);
+
+      setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          timeLeft = 60;
+          refreshData();
+        }
+        document.getElementById("refresh-counter").innerText = `SCANNING 100 CHANNELS: ${timeLeft}S`;
+      }, 1000);
+
+      refreshData();
+    </script>
+  </body>
+</html>
