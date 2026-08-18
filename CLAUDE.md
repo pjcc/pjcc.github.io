@@ -18,12 +18,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `index.html` - the entire landing page: markup, JSON-LD `Person` schema, SEO/OG/Twitter meta, and an inline dark-mode script. Self-contained apart from `style.css`
 - `style.css` - light theme on `body`, dark theme via a `body.dark` class. The toggle script adds/removes that class; there are no CSS custom properties, so a new colour must be added in both blocks
 - `db_dboard.html` - a standalone dashboard (see below), not linked from `index.html`
+- `assets/projects/` - project card icons: the real `audioflip.ico`, plus two SVGs drawn for the tray app and the extension, which ship no icon of their own. The three sites use their own favicon emoji inline instead
 - `assets/` - favicon only. `archive/assets/` holds superseded icons; treat it as dead storage
 - `sitemap.xml` currently lists only `/`. New public pages should be added there
 
 ### Dark mode contract
 
 The toggle in `index.html` is the source of truth for theming: it reads `localStorage.theme`, falls back to `prefers-color-scheme`, and keeps `aria-pressed` plus `aria-label` in sync on every change. Accessibility attributes on that button have been deliberately fixed in past commits - preserve them when editing.
+
+## Projects section
+
+Six cards below the links in `index.html`, each linking to a `pjcc` repo. Two things about it are load-bearing:
+
+**Dates are baked in *and* fetched.** Each card carries `<time datetime="<full ISO>">` with the real commit date, so the cards are correct with JS off or when the GitHub API is rate-limited (60 req/hour per IP unauthenticated, and the page spends one per card). On load it fetches `/repos/pjcc/<repo>/commits?per_page=1` per card and overwrites the text; failures are swallowed so the baked date survives. The repo name comes from `data-repo`, so adding a project is markup-only.
+
+**The markup order is newest-first and must stay that way.** Sorting runs twice: once immediately off the baked dates - a no-op while the markup is already ordered, which is what stops the cards visibly reshuffling on load - and once more after `Promise.allSettled`, rather than once per fetch. `datetime` holds a full timestamp rather than a date so repos pushed on the same day order by time of day instead of tying.
+
+When updating the baked dates, keep them in newest-first order in the file; the no-JS fallback is the only thing that order serves.
 
 ## db_dboard.html (status dashboard)
 
