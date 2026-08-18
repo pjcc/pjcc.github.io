@@ -101,11 +101,28 @@ footer {
 }
 
 .project h3 a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: #0069a3;
   text-decoration: none;
 }
 
-.project h3 a:hover {
+/* Emoji and raster icons sit on the same 1.25rem box so the names line up */
+.project .icon {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.05rem;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+img.icon {
+  object-fit: contain;
+}
+
+.project h3 a:hover span:last-child {
   text-decoration: underline;
 }
 
@@ -116,10 +133,19 @@ footer {
   line-height: 1.45;
 }
 
-.project .tech {
-  margin-top: 0.5rem;
+.project .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
   font-size: 0.8rem;
   color: #71717a;
+}
+
+.project .updated {
+  white-space: nowrap;
 }
 
 /* Keyboard focus, in both themes */
@@ -189,7 +215,7 @@ body.dark .project p {
   color: #b8b8b8;
 }
 
-body.dark .project .tech {
+body.dark .project .meta {
   color: #8a8a8a;
 }
 

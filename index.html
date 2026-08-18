@@ -48,25 +48,105 @@
           <h2 id="portfolio-heading">Projects</h2>
           <ul class="projects">
             <li class="project">
-              <h3><a href="https://github.com/pjcc/audioflip">audioflip</a></h3>
-              <p>Windows tray widget for switching audio input and output devices in one click, with Bluetooth connect and disconnect handled inline</p>
-              <p class="tech">Python &middot; PyQt6 &middot; Windows Core Audio</p>
-            </li>
-            <li class="project">
-              <h3><a href="https://github.com/pjcc/claude-usage-menubar">claude-usage-menubar</a></h3>
+              <h3>
+                <a href="https://github.com/pjcc/claude-usage-menubar"><img class="icon" src="assets/projects/claude-usage.svg" alt="" width="20" height="20" /><span>claude-usage-menubar</span></a>
+              </h3>
               <p>Claude session and weekly usage limits, live in the Windows tray and the macOS menu bar</p>
-              <p class="tech">Python standard library &middot; SwiftBar</p>
+              <p class="meta">
+                <span class="tech">Python standard library &middot; SwiftBar</span>
+                <span class="updated">Updated <time datetime="2026-08-18T13:59:59Z" data-repo="claude-usage-menubar">18 Aug 2026</time></span>
+              </p>
             </li>
             <li class="project">
-              <h3><a href="https://github.com/pjcc/yt-watch-later-toggle">yt-watch-later-toggle</a></h3>
+              <h3>
+                <a href="https://github.com/pjcc/yt-watch-later-toggle"><img class="icon" src="assets/projects/youtube-play.svg" alt="" width="20" height="20" /><span>yt-watch-later-toggle</span></a>
+              </h3>
               <p>Chrome extension putting a one-click Watch Later toggle on YouTube watch pages, with the saved state read back on every navigation</p>
-              <p class="tech">Chrome MV3 &middot; Vanilla JavaScript</p>
+              <p class="meta">
+                <span class="tech">Chrome MV3 &middot; Vanilla JavaScript</span>
+                <span class="updated">Updated <time datetime="2026-08-18T13:49:23Z" data-repo="yt-watch-later-toggle">18 Aug 2026</time></span>
+              </p>
+            </li>
+            <li class="project">
+              <h3>
+                <a href="https://github.com/pjcc/audioflip"><img class="icon" src="assets/projects/audioflip.ico" alt="" width="20" height="20" /><span>audioflip</span></a>
+              </h3>
+              <p>Windows tray widget for switching audio input and output devices in one click, with Bluetooth connect and disconnect handled inline</p>
+              <p class="meta">
+                <span class="tech">Python &middot; PyQt6 &middot; Windows Core Audio</span>
+                <span class="updated">Updated <time datetime="2026-08-18T12:26:42Z" data-repo="audioflip">18 Aug 2026</time></span>
+              </p>
+            </li>
+            <li class="project">
+              <h3>
+                <a href="https://github.com/pjcc/listless"><span class="icon" aria-hidden="true">&#128279;</span><span>listless</span></a>
+              </h3>
+              <p>Shared link lists with Google sign-in, live collaboration and public share links</p>
+              <p class="meta">
+                <span class="tech">Firebase &middot; Firestore &middot; Cloudflare Workers</span>
+                <span class="updated">Updated <time datetime="2026-07-15T09:54:10Z" data-repo="listless">15 Jul 2026</time></span>
+              </p>
+            </li>
+            <li class="project">
+              <h3>
+                <a href="https://github.com/pjcc/gigs"><span class="icon" aria-hidden="true">&#127928;</span><span>gigs</span></a>
+              </h3>
+              <p>Gig tracker for a group of friends backed by a Google Sheet, plus a clashfinder built from aggregated festival listings</p>
+              <p class="meta">
+                <span class="tech">React &middot; Vite &middot; Apps Script</span>
+                <span class="updated">Updated <time datetime="2026-05-15T13:23:45Z" data-repo="gigs">15 May 2026</time></span>
+              </p>
+            </li>
+            <li class="project">
+              <h3>
+                <a href="https://github.com/pjcc/pubs"><span class="icon" aria-hidden="true">&#127866;</span><span>pubs</span></a>
+              </h3>
+              <p>Pub tracker with a map view, tagging and shared visit history across cities</p>
+              <p class="meta">
+                <span class="tech">React &middot; Vite &middot; Apps Script &middot; Places API</span>
+                <span class="updated">Updated <time datetime="2026-03-16T22:26:33Z" data-repo="pubs">16 Mar 2026</time></span>
+              </p>
             </li>
           </ul>
         </section>
       </main>
       <footer></footer>
     </div>
+    <script>
+      // The commit dates are baked into the markup so the cards are right with
+      // no JS and when the API is unreachable or rate-limited. This refreshes
+      // them from GitHub when it answers, so they cannot silently go stale.
+      (() => {
+        const list = document.querySelector(".projects");
+        const stamp = (li) => li.querySelector("time")?.getAttribute("datetime") || "";
+
+        // Newest first. The markup is already in this order, so the first call
+        // is a no-op and the cards do not visibly reshuffle on load; only live
+        // data that actually changes the order moves anything.
+        const sortCards = () => {
+          [...list.children]
+            .sort((a, b) => stamp(b).localeCompare(stamp(a)))
+            .forEach((li) => list.appendChild(li));
+        };
+
+        sortCards();
+
+        const times = [...document.querySelectorAll("time[data-repo]")];
+        Promise.allSettled(
+          times.map((el) =>
+            fetch(`https://api.github.com/repos/pjcc/${el.dataset.repo}/commits?per_page=1`)
+              .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+              .then(([commit]) => {
+                const when = new Date(commit.commit.committer.date);
+                if (isNaN(when)) return;
+                el.setAttribute("datetime", when.toISOString());
+                el.textContent = when.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+              }),
+          ),
+        ).then(sortCards); // one re-sort once every card has settled, not six
+      })();
+    </script>
+
     <script>
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const storedTheme = localStorage.getItem("theme");
