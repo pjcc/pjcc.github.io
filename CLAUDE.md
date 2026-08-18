@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working in this repo
 
-- **Deploy = push.** GitHub Pages serves `master` (the default branch is `master`, not `main`). Any commit pushed to `origin/master` is live within a minute or two.
+- **Deploy = push.** GitHub Pages serves `main` (deploy-from-branch, not Actions). Any commit pushed to `origin/main` is live within a minute or two. The branch was renamed from `master` on 2026-08-18; GitHub repointed the Pages source automatically, so nothing else refers to the old name.
 - **Preview locally** by opening the HTML file directly in a browser, or `python -m http.server 8000` from the repo root if a real origin is needed (the dashboard's `fetch` calls require `http://`, not `file://`).
 - **Formatting** is Prettier via the VS Code extension (`.vscode/settings.json` sets it as the default formatter). No config file, so Prettier defaults apply. There is no CLI formatter installed - do not add one without being asked.
 - Paths inside HTML are **relative** (`style.css`, `assets/favicon.png`) but the SEO metadata (`og:url`, `canonical`, `sitemap.xml`, `robots.txt`) is **absolute against `https://piers.qa/`**. Changing the domain means updating all of those together.
