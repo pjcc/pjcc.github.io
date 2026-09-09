@@ -28,7 +28,7 @@ The toggle in `index.html` is the source of truth for theming: it reads `localSt
 
 ## Projects section
 
-Six cards below the links in `index.html`, each linking to a `pjcc` repo. Two things about it are load-bearing:
+Seven cards below the links in `index.html`, each linking to a `pjcc` repo. Two things about it are load-bearing:
 
 **Dates are baked in *and* fetched.** Each card carries `<time datetime="<full ISO>">` with the real commit date, so the cards are correct with JS off or when the GitHub API is rate-limited (60 req/hour per IP unauthenticated, and the page spends one per card). On load it fetches `/repos/pjcc/<repo>/commits?per_page=1` per card and overwrites the text; failures are swallowed so the baked date survives. The repo name comes from `data-repo`, so adding a project is markup-only.
 
