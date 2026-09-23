@@ -54,7 +54,7 @@
               <p>Daily page of the hundred-point Krillion answers, each resolved to a Wikipedia summary, image and link, rebuilt every morning after the puzzle rolls over</p>
               <p class="meta">
                 <span class="tech">Python standard library &middot; Wikipedia API &middot; GitHub Actions</span>
-                <span class="updated">Updated <time datetime="2026-09-09T11:57:45Z" data-repo="krill">9 Sep 2026</time></span>
+                <span class="updated">Updated <time datetime="2026-09-14T11:53:27Z" data-repo="krill" data-author="pjcc">14 Sep 2026</time></span>
               </p>
             </li>
             <li class="project">
@@ -141,10 +141,15 @@
 
         sortCards();
 
+        // data-author limits a card to that user's commits, for repos where a
+        // bot commits on a schedule and would otherwise pass for real activity.
         const times = [...document.querySelectorAll("time[data-repo]")];
         Promise.allSettled(
           times.map((el) =>
-            fetch(`https://api.github.com/repos/pjcc/${el.dataset.repo}/commits?per_page=1`)
+            fetch(
+              `https://api.github.com/repos/pjcc/${el.dataset.repo}/commits?per_page=1` +
+                (el.dataset.author ? `&author=${el.dataset.author}` : ""),
+            )
               .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
               .then(([commit]) => {
                 const when = new Date(commit.commit.committer.date);
