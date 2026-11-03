@@ -17,10 +17,26 @@
     <meta name="twitter:title" content="Piers Carrigan - QA Engineer" />
     <meta name="twitter:description" content="The official site of Piers Carrigan - QA engineer and software quality professional." />
     <meta name="twitter:image" content="https://piers.qa/assets/favicon.png" />
+    <meta name="color-scheme" content="light dark" />
     <script>
-      // Set before first paint so the project list never shows in its baked
-      // order; removed once the live dates have sorted it (see below).
+      // Both run before first paint, which is why they live here and not at the
+      // end of <body>.
+      // The project list stays hidden until the live dates have sorted it, so it
+      // never shows in its baked order (removed by the script further down).
       document.documentElement.classList.add("projects-pending");
+
+      // The theme is decided here so a cold load paints in the right theme
+      // straight away. Applied at the end of <body>, the page painted light and
+      // then faded to dark through the body's background transition.
+      (() => {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("theme");
+        } catch {}
+        const dark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
     </script>
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="assets/favicon.png" type="image/png" />
@@ -180,15 +196,11 @@
     </script>
 
     <script>
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const storedTheme = localStorage.getItem("theme");
+      const root = document.documentElement;
       const toggleBtn = document.getElementById("darkModeToggle");
 
-      // Determine initial theme
-      const isDark = storedTheme === "dark" || (!storedTheme && prefersDark);
-      if (isDark) {
-        document.body.classList.add("dark");
-      }
+      // The theme itself was applied in <head>; this reads it back.
+      const isDark = root.classList.contains("dark");
 
       // Set initial accessibility attributes
       toggleBtn.setAttribute("aria-pressed", isDark);
@@ -197,10 +209,13 @@
 
       // Handle toggle click
       toggleBtn.addEventListener("click", () => {
-        const nowDark = !document.body.classList.contains("dark");
+        const nowDark = !root.classList.contains("dark");
 
-        document.body.classList.toggle("dark", nowDark);
-        localStorage.setItem("theme", nowDark ? "dark" : "light");
+        root.classList.toggle("dark", nowDark);
+        root.style.colorScheme = nowDark ? "dark" : "light";
+        try {
+          localStorage.setItem("theme", nowDark ? "dark" : "light");
+        } catch {}
 
         // Update ARIA attributes and icon
         toggleBtn.setAttribute("aria-pressed", nowDark);
