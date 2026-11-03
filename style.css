@@ -181,59 +181,59 @@ button:focus-visible {
 }
 
 /* Dark mode */
-body.dark {
+html.dark body {
   background: #121212;
   color: #e0e0e0;
 }
 
-body.dark header p,
-body.dark footer {
+html.dark header p,
+html.dark footer {
   color: #aaa;
 }
 
-body.dark .btn {
+html.dark .btn {
   background: #0077b6;
 }
 
-body.dark .btn:hover {
+html.dark .btn:hover {
   background: #005c8e;
 }
 
-body.dark .toggle-btn {
+html.dark .toggle-btn {
   border-color: #555;
   color: #e0e0e0;
 }
 
-body.dark .toggle-btn:hover {
+html.dark .toggle-btn:hover {
   background: #3b4142;
 }
 
-body.dark .portfolio h2 {
+html.dark .portfolio h2 {
   color: #ccc;
 }
 
-body.dark .project {
+html.dark .project {
   background: #1b1b1b;
   border-color: #333;
 }
 
-body.dark .project:hover {
+html.dark .project:hover {
   border-color: #4db8e8;
 }
 
-body.dark .project h3 a {
+html.dark .project h3 a {
   color: #5cc2ef;
 }
 
-body.dark .project p {
+html.dark .project p {
   color: #b8b8b8;
 }
 
-body.dark .project .meta {
+html.dark .project .meta {
   color: #8a8a8a;
 }
 
-body.dark a:focus-visible,
-body.dark button:focus-visible {
+html.dark a:focus-visible,
+html.dark button:focus-visible {
   outline-color: #5cc2ef;
 }

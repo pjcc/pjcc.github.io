@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Structure
 
 - `index.html` - the entire landing page: markup, JSON-LD `Person` schema, SEO/OG/Twitter meta, and an inline dark-mode script. Self-contained apart from `style.css`
-- `style.css` - light theme on `body`, dark theme via a `body.dark` class. The toggle script adds/removes that class; there are no CSS custom properties, so a new colour must be added in both blocks
+- `style.css` - light theme on `body`, dark theme via a `dark` class on `<html>` (selectors are `html.dark ...`). The toggle script adds/removes that class; there are no CSS custom properties, so a new colour must be added in both blocks
 - `db_dboard.html` - a standalone dashboard (see below), not linked from `index.html`
 - `assets/projects/` - project card icons: the real `audioflip.ico`, plus two SVGs drawn for the tray app and the extension, which ship no icon of their own. The three sites use their own favicon emoji inline instead
 - `assets/` - favicon only. `archive/assets/` holds superseded icons; treat it as dead storage
@@ -24,7 +24,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Dark mode contract
 
-The toggle in `index.html` is the source of truth for theming: it reads `localStorage.theme`, falls back to `prefers-color-scheme`, and keeps `aria-pressed` plus `aria-label` in sync on every change. Accessibility attributes on that button have been deliberately fixed in past commits - preserve them when editing.
+The **initial** theme is decided by an inline script in `<head>`: it reads `localStorage.theme`, falls back to `prefers-color-scheme`, and sets the `dark` class plus inline `color-scheme` on `<html>` before first paint. It must stay in `<head>` - when it ran at the end of `<body>`, a cold load (incognito, empty cache) painted light first and then faded to dark through `body`'s 1s background transition, a white flash that warm loads hid because they reached the script before painting. The `<meta name="color-scheme">` covers the browser canvas before the stylesheet arrives.
+
+The toggle script at the end of `<body>` reads that class back, flips it (and `color-scheme`) on click, saves `localStorage.theme`, and keeps `aria-pressed` plus `aria-label` in sync on every change. Accessibility attributes on that button have been deliberately fixed in past commits - preserve them when editing. Storage access is wrapped in `try` so blocked storage cannot stop the theme or the toggle.
 
 ## Projects section
 
