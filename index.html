@@ -17,6 +17,11 @@
     <meta name="twitter:title" content="Piers Carrigan - QA Engineer" />
     <meta name="twitter:description" content="The official site of Piers Carrigan - QA engineer and software quality professional." />
     <meta name="twitter:image" content="https://piers.qa/assets/favicon.png" />
+    <script>
+      // Set before first paint so the project list never shows in its baked
+      // order; removed once the live dates have sorted it (see below).
+      document.documentElement.classList.add("projects-pending");
+    </script>
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="assets/favicon.png" type="image/png" />
     <link rel="canonical" href="https://piers.qa/" />
@@ -130,16 +135,22 @@
         const list = document.querySelector(".projects");
         const stamp = (li) => li.querySelector("time")?.getAttribute("datetime") || "";
 
-        // Newest first. The markup is already in this order, so the first call
-        // is a no-op and the cards do not visibly reshuffle on load; only live
-        // data that actually changes the order moves anything.
+        // Newest first. The list stays hidden (projects-pending, set in <head>)
+        // until the live dates have settled, so it appears once in its final
+        // order rather than painting the baked order and then reshuffling.
         const sortCards = () => {
           [...list.children]
             .sort((a, b) => stamp(b).localeCompare(stamp(a)))
             .forEach((li) => list.appendChild(li));
         };
+        const reveal = () => document.documentElement.classList.remove("projects-pending");
 
         sortCards();
+
+        // A slow API must not keep the list hidden: after this long, abort any
+        // fetch still in flight and show whatever has arrived plus baked dates.
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
 
         // data-author limits a card to that user's commits, for repos where a
         // bot commits on a schedule and would otherwise pass for real activity.
@@ -149,6 +160,7 @@
             fetch(
               `https://api.github.com/repos/pjcc/${el.dataset.repo}/commits?per_page=1` +
                 (el.dataset.author ? `&author=${el.dataset.author}` : ""),
+              { signal: controller.signal },
             )
               .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
               .then(([commit]) => {
@@ -158,7 +170,12 @@
                 el.textContent = when.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
               }),
           ),
-        ).then(sortCards); // one re-sort once every card has settled, not six
+        ).then(() => {
+          // one re-sort once every card has settled, not one per card
+          clearTimeout(timeout);
+          sortCards();
+          reveal();
+        });
       })();
     </script>
 

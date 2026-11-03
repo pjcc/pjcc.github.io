@@ -81,6 +81,20 @@ footer {
   padding: 0;
   display: grid;
   gap: 1rem;
+  transition: opacity 0.4s ease;
+}
+
+/* Hidden while the live commit dates load, so the cards appear once in their
+   final order instead of reshuffling. Only JS sets this class, so with JS off
+   the list shows straight away. */
+.projects-pending .projects {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .projects {
+    transition: none;
+  }
 }
 
 .project {
